@@ -1,4 +1,7 @@
-﻿export const affectedPackagesList = [
+﻿/**
+ * Source: https://socket.dev/blog/ongoing-supply-chain-attack-targets-crowdstrike-npm-packages
+ */
+export const affectedPackagesList = [
   "@ahmedhfarag/ngx-perfect-scrollbar@20.0.20",
   "@ahmedhfarag/ngx-virtual-scroller@4.0.4",
   "@art-ws/common@2.0.28",
