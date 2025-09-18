@@ -1,6 +1,6 @@
 {
   "name": "package-security-checker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Goes through a list of npm packages and informs you when a package could contain mailware.",
   "main": "dist/src/index.js",
   "bin": {
@@ -25,6 +25,11 @@
   },
   "author": "arne.seidenfaden@konvoj.de",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arne-seidenfaden/package-security-checker.git"
+  },
+  "homepage": "https://github.com/arne-seidenfaden/package-security-checker#readme",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.5.1",

@@ -1,5 +1,8 @@
 # Package Security Checker
 
+This tool initially runs package checks based on the affected packages list from the source: [@https://socket.dev/blog/ongoing-supply-chain-attack-targets-crowdstrike-npm-packages](https://socket.dev/blog/ongoing-supply-chain-attack-targets-crowdstrike-npm-packages)
+It is possible, that the list is currently not up to date.
+
 > **⚠️ DISCLAIMER**: This tool is provided as-is without any guarantees. I cannot guarantee that it will work correctly or find all affected packages. This is a recommendation tool, not a guarantee of security. I will not be responsible for any damages or costs arising from affected npm packages. Use this tool as part of a comprehensive security strategy, not as your only security measure.
 
 A Node.js CLI tool that scans your `package-lock.json` file to detect packages that may contain malware or security vulnerabilities. This tool checks your installed packages against a curated list of known affected packages.
