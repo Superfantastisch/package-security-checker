@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { InputValidator, SecurityCheckError } from './validation';
 
 // Interface for package-lock.json structure
 interface PackageLockPackage {
@@ -30,14 +31,16 @@ interface PackageLockJson {
  */
 export function getInstalledPackages(packageLockPath: string): string[] {
   try {
-    // Check if file exists
-    if (!fs.existsSync(packageLockPath)) {
-      throw new Error(`Package-lock.json file not found at: ${packageLockPath}`);
-    }
+    // Validate and sanitize the input path
+    const validatedPath = InputValidator.validatePath(packageLockPath);
+    
+    // Check if file exists and validate it
+    InputValidator.validateFileExists(validatedPath);
+    InputValidator.validateFileSize(validatedPath);
 
-    // Read and parse the package-lock.json file
-    const fileContent = fs.readFileSync(packageLockPath, 'utf8');
-    const packageLock: PackageLockJson = JSON.parse(fileContent);
+    // Read and parse the package-lock.json file with safe JSON parsing
+    const fileContent = fs.readFileSync(validatedPath, 'utf8');
+    const packageLock: PackageLockJson = InputValidator.safeJsonParse(fileContent);
 
     const installedPackages: string[] = [];
 
@@ -77,10 +80,13 @@ export function getInstalledPackages(packageLockPath: string): string[] {
     return installedPackages.sort(); // Return sorted list for consistency
 
   } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error(`Invalid JSON in package-lock.json file: ${error.message}`);
+    if (error instanceof SecurityCheckError) {
+      throw error; // Re-throw security errors as-is
     }
-    throw error;
+    if (error instanceof SyntaxError) {
+      throw new SecurityCheckError(`Invalid JSON in package-lock.json file: ${error.message}`, 'JSON_SYNTAX_ERROR');
+    }
+    throw new SecurityCheckError(`Unexpected error: ${error instanceof Error ? error.message : String(error)}`, 'UNEXPECTED_ERROR');
   }
 }
 
@@ -90,8 +96,16 @@ export function getInstalledPackages(packageLockPath: string): string[] {
  * @returns Array of package names in format "package@version"
  */
 export function getInstalledPackagesFromDirectory(directoryPath: string): string[] {
-  const packageLockPath = path.join(directoryPath, 'package-lock.json');
-  return getInstalledPackages(packageLockPath);
+  try {
+    const validatedDirPath = InputValidator.validatePath(directoryPath);
+    const packageLockPath = path.join(validatedDirPath, 'package-lock.json');
+    return getInstalledPackages(packageLockPath);
+  } catch (error) {
+    if (error instanceof SecurityCheckError) {
+      throw error;
+    }
+    throw new SecurityCheckError(`Error processing directory: ${error instanceof Error ? error.message : String(error)}`, 'DIRECTORY_ERROR');
+  }
 }
 
 /**
@@ -104,11 +118,18 @@ export function getAffectedPackages(
   packageLockPath: string, 
   hasPackageFunction: (fullName: string) => boolean
 ): { allPackages: string[]; affectedPackages: string[] } {
-  const allPackages = getInstalledPackages(packageLockPath);
-  const affectedPackages = allPackages.filter(hasPackageFunction);
-  
-  return {
-    allPackages,
-    affectedPackages
-  };
+  try {
+    const allPackages = getInstalledPackages(packageLockPath);
+    const affectedPackages = allPackages.filter(hasPackageFunction);
+    
+    return {
+      allPackages,
+      affectedPackages
+    };
+  } catch (error) {
+    if (error instanceof SecurityCheckError) {
+      throw error;
+    }
+    throw new SecurityCheckError(`Error getting affected packages: ${error instanceof Error ? error.message : String(error)}`, 'AFFECTED_PACKAGES_ERROR');
+  }
 }

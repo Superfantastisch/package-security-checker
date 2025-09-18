@@ -4,38 +4,31 @@ import * as path from "path";
 import * as fs from "fs";
 import { getAffectedPackages } from "./security-check";
 import { packageUtils } from "./affected-list";
+import { InputValidator, SecurityCheckError } from "./validation";
 
 // CLI interface for package security checker
 function main() {
-  const args = process.argv.slice(2);
-
-  // Show help if no arguments or help flag
-  if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
-    showHelp();
-    return;
-  }
-
-  const packageLockPath = args[0];
-
-  // Validate the path
-  if (!packageLockPath) {
-    console.error("❌ Error: Please provide a path to package-lock.json file");
-    console.log("\nUsage: npx package-security-checker <path-to-package-lock.json>");
-    console.log("Example: npx package-security-checker ./package-lock.json");
-    console.log("Example: npx package-security-checker /path/to/project/package-lock.json");
-    process.exit(1);
-  }
-
-  // Check if it's a directory path
-  let actualPath = packageLockPath;
-  if (
-    fs.existsSync(packageLockPath) &&
-    fs.statSync(packageLockPath).isDirectory()
-  ) {
-    actualPath = path.join(packageLockPath, "package-lock.json");
-  }
-
   try {
+    const args = process.argv.slice(2);
+
+    // Show help if no arguments or help flag
+    if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
+      showHelp();
+      return;
+    }
+
+    // Validate arguments
+    const packageLockPath = InputValidator.validateArguments(args);
+
+    // Check if it's a directory path
+    let actualPath = packageLockPath;
+    if (
+      fs.existsSync(packageLockPath) &&
+      fs.statSync(packageLockPath).isDirectory()
+    ) {
+      actualPath = path.join(packageLockPath, "package-lock.json");
+    }
+
     console.log("🔍 Package Security Checker");
     console.log("=".repeat(50));
     console.log(`📁 Checking: ${actualPath}\n`);
@@ -63,10 +56,17 @@ function main() {
       process.exit(0);
     }
   } catch (error) {
-    console.error(
-      "❌ Error:",
-      error instanceof Error ? error.message : String(error)
-    );
+    if (error instanceof SecurityCheckError) {
+      console.error("❌ Security Error:", error.message);
+      if (error.code) {
+        console.error(`   Error Code: ${error.code}`);
+      }
+    } else {
+      console.error(
+        "❌ Error:",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
     process.exit(1);
   }
 }
@@ -90,6 +90,13 @@ Examples:
 
 Options:
   --help, -h    Show this help message
+
+Security Features:
+  ✅ Path validation to prevent directory traversal attacks
+  ✅ File size limits to prevent DoS attacks
+  ✅ Safe JSON parsing to prevent prototype pollution
+  ✅ Input validation for all user inputs
+  ✅ Comprehensive error handling
 
 The tool will:
   ✅ Read all packages from the package-lock.json file

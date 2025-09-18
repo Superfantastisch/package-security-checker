@@ -1,4 +1,5 @@
-import { affectedPackagesList } from '../affected-packages-list';
+import { affectedPackagesList } from './affected-packages-list';
+import { InputValidator, SecurityCheckError } from './validation';
 
 // Type definitions for package data
 interface PackageInfo {
@@ -26,9 +27,12 @@ const packageData = loadPackageDataFromTS();
 
 // Function to parse package string and create PackageInfo object
 function parsePackageString(packageString: string): PackageInfo {
+  // Validate the package string format
+  InputValidator.validatePackageString(packageString);
+  
   const lastAtIndex = packageString.lastIndexOf('@');
   if (lastAtIndex === -1) {
-    throw new Error(`Invalid package format: ${packageString}`);
+    throw new SecurityCheckError(`Invalid package format: ${packageString}`, 'INVALID_PACKAGE_FORMAT');
   }
   
   const name = packageString.substring(0, lastAtIndex);
@@ -47,7 +51,11 @@ packageData.forEach(packageString => {
     const packageInfo = parsePackageString(packageString);
     affectedPackagesMap.set(packageInfo.fullName, packageInfo);
   } catch (error) {
-    console.error(`Error parsing package: ${packageString}`, error);
+    if (error instanceof SecurityCheckError) {
+      console.error(`Security error parsing package: ${packageString}`, error.message);
+    } else {
+      console.error(`Error parsing package: ${packageString}`, error);
+    }
   }
 });
 
@@ -58,17 +66,26 @@ export { affectedPackagesMap, PackageInfo, parsePackageString };
 export const packageUtils = {
   // Get all packages by name (returns array of versions)
   getPackagesByName: (name: string): PackageInfo[] => {
+    if (!name || typeof name !== 'string') {
+      throw new SecurityCheckError('Package name must be a non-empty string', 'INVALID_PACKAGE_NAME_INPUT');
+    }
     return Array.from(affectedPackagesMap.values()).filter(pkg => pkg.name === name);
   },
   
   // Get latest version of a package
   getLatestVersion: (name: string): PackageInfo | undefined => {
+    if (!name || typeof name !== 'string') {
+      throw new SecurityCheckError('Package name must be a non-empty string', 'INVALID_PACKAGE_NAME_INPUT');
+    }
     const packages = Array.from(affectedPackagesMap.values()).filter(pkg => pkg.name === name);
     return packages.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }))[0];
   },
   
   // Check if a package exists
   hasPackage: (fullName: string): boolean => {
+    if (!fullName || typeof fullName !== 'string') {
+      return false; // Return false for invalid input instead of throwing
+    }
     return affectedPackagesMap.has(fullName);
   },
   

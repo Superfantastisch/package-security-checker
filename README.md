@@ -20,13 +20,58 @@ A Node.js CLI tool that scans your `package-lock.json` file to detect packages t
 - Node.js (version 14 or higher)
 - npm
 
-### Install Dependencies
+### Using with npx (Recommended)
+
+Once published to npm, you can use this tool directly with `npx` without installing it:
+
+```bash
+# Check a specific package-lock.json file
+npx package-security-checker ./package-lock.json
+
+# Check package-lock.json in a directory
+npx package-security-checker /path/to/project/
+
+# Check current directory's package-lock.json
+npx package-security-checker .
+
+# Show help
+npx package-security-checker --help
+```
+
+### Global Installation (Optional)
+
+If you plan to use this tool frequently, you can install it globally:
+
+```bash
+npm install -g package-security-checker
+```
+
+Then use it directly:
+
+```bash
+package-security-checker ./package-lock.json
+```
+
+### Local Installation (Optional)
+
+You can also install it locally in a project:
+
+```bash
+npm install package-security-checker
+npx package-security-checker ./package-lock.json
+```
+
+### Development Installation
+
+For development or if you want to build from source:
+
+#### Install Dependencies
 
 ```bash
 npm install
 ```
 
-### Build the Project
+#### Build the Project
 
 ```bash
 npm run build
@@ -34,7 +79,49 @@ npm run build
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (with npx)
+
+```bash
+# Check a specific package-lock.json file
+npx package-security-checker ./package-lock.json
+
+# Check package-lock.json in a directory
+npx package-security-checker /path/to/project/
+
+# Check current directory's package-lock.json
+npx package-security-checker .
+
+# Show help
+npx package-security-checker --help
+```
+
+### Command Line Options
+
+```bash
+# Show help
+npx package-security-checker --help
+npx package-security-checker -h
+```
+
+### Examples
+
+```bash
+# Check the package-lock.json in your current project
+npx package-security-checker ./package-lock.json
+
+# Check a different project's package-lock.json
+npx package-security-checker /path/to/another/project/package-lock.json
+
+# Check by providing just the directory (tool will look for package-lock.json)
+npx package-security-checker /path/to/project/
+
+# Check a specific file with absolute path
+npx package-security-checker /absolute/path/to/package-lock.json
+```
+
+### Development Usage
+
+If you're working with the source code:
 
 ```bash
 # Check a specific package-lock.json file
@@ -47,27 +134,6 @@ npm run check /path/to/project/
 npm run check .
 ```
 
-### Command Line Options
-
-```bash
-# Show help
-npm run check --help
-npm run check -h
-```
-
-### Examples
-
-```bash
-# Check the package-lock.json in your current project
-npm run check ./package-lock.json
-
-# Check a different project's package-lock.json
-npm run check /path/to/another/project/package-lock.json
-
-# Check by providing just the directory (tool will look for package-lock.json)
-npm run check /path/to/project/
-```
-
 ## How It Works
 
 1. **Package Extraction**: The tool reads your `package-lock.json` file and extracts all installed packages with their exact versions
@@ -77,6 +143,8 @@ npm run check /path/to/project/
    - Number of affected packages found
    - List of affected packages (if any)
    - Security recommendations
+
+**Note**: The affected packages list is compiled into the built version of the tool. If you modify `affected-packages-list.ts`, you need to rebuild the project (`npm run build`) or use the development check command (`npm run check`) for changes to take effect.
 
 ## Updating the Affected Packages List
 
@@ -97,7 +165,15 @@ export const affectedPackagesList = [
 1. Open `affected-packages-list.ts` in any text editor or IDE
 2. Add new packages in the format `"package-name@version"` (with quotes and comma)
 3. Save the file
-4. The changes will be automatically picked up the next time the tool runs
+4. **Important**: You must rebuild the project or use the development check option for changes to take effect:
+   ```bash
+   # Option 1: Rebuild and use the built version
+   npm run build
+   npm run start ./package-lock.json
+   
+   # Option 2: Use the development check (no rebuild needed)
+   npm run check ./package-lock.json
+   ```
 
 ### Benefits of TypeScript Array Format
 - ✅ **Type Safety**: Compile-time checking ensures proper format

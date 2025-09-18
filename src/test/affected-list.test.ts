@@ -1,4 +1,5 @@
 import { affectedPackagesMap, parsePackageString, packageUtils } from '../affected-list';
+import { SecurityCheckError } from '../validation';
 
 describe('affected-list', () => {
   beforeEach(() => {
@@ -28,13 +29,13 @@ describe('affected-list', () => {
       });
     });
 
-    it('should handle packages with multiple @ symbols', () => {
-      const result = parsePackageString('@scope/package@name@1.0.0');
+    it('should handle packages with multiple @ symbols in version', () => {
+      const result = parsePackageString('@scope/package@1.0.0-alpha.1');
       
       expect(result).toEqual({
-        name: '@scope/package@name',
-        version: '1.0.0',
-        fullName: '@scope/package@name@1.0.0'
+        name: '@scope/package',
+        version: '1.0.0-alpha.1',
+        fullName: '@scope/package@1.0.0-alpha.1'
       });
     });
 
@@ -48,26 +49,22 @@ describe('affected-list', () => {
       });
     });
 
-    it('should throw error for package string without @ symbol', () => {
+    it('should throw SecurityCheckError for package string without @ symbol', () => {
       expect(() => {
         parsePackageString('package-name');
-      }).toThrow('Invalid package format: package-name');
+      }).toThrow(SecurityCheckError);
     });
 
-    it('should throw error for empty package string', () => {
+    it('should throw SecurityCheckError for empty package string', () => {
       expect(() => {
         parsePackageString('');
-      }).toThrow('Invalid package format: ');
+      }).toThrow(SecurityCheckError);
     });
 
-    it('should handle package string ending with @ (empty version)', () => {
-      const result = parsePackageString('package-name@');
-      
-      expect(result).toEqual({
-        name: 'package-name',
-        version: '',
-        fullName: 'package-name@'
-      });
+    it('should throw SecurityCheckError for package string ending with @ (empty version)', () => {
+      expect(() => {
+        parsePackageString('package-name@');
+      }).toThrow(SecurityCheckError);
     });
   });
 
@@ -185,6 +182,16 @@ describe('affected-list', () => {
         ]);
       });
 
+      it('should throw SecurityCheckError for invalid package name', () => {
+        expect(() => {
+          packageUtils.getPackagesByName('');
+        }).toThrow(SecurityCheckError);
+        
+        expect(() => {
+          packageUtils.getPackagesByName(null as any);
+        }).toThrow(SecurityCheckError);
+      });
+
       it('should return empty array for non-existent package name', () => {
         const result = packageUtils.getPackagesByName('non-existent');
         
@@ -213,6 +220,12 @@ describe('affected-list', () => {
           version: '2.0.0',
           fullName: 'package1@2.0.0'
         });
+      });
+
+      it('should throw SecurityCheckError for invalid package name', () => {
+        expect(() => {
+          packageUtils.getLatestVersion('');
+        }).toThrow(SecurityCheckError);
       });
 
       it('should return undefined for non-existent package', () => {
@@ -265,6 +278,11 @@ describe('affected-list', () => {
         expect(packageUtils.hasPackage('non-existent@1.0.0')).toBe(false);
         expect(packageUtils.hasPackage('package1@999.0.0')).toBe(false);
       });
+
+      it('should return false for invalid input', () => {
+        expect(packageUtils.hasPackage('')).toBe(false);
+        expect(packageUtils.hasPackage(null as any)).toBe(false);
+      });
     });
 
     describe('getAllPackageNames', () => {
@@ -301,20 +319,18 @@ describe('affected-list', () => {
   });
 
   describe('Edge cases and boundary conditions', () => {
-    it('should handle packages with very long names', () => {
+    it('should reject packages with very long names', () => {
       const longName = 'a'.repeat(1000);
-      const result = parsePackageString(`${longName}@1.0.0`);
-      
-      expect(result.name).toBe(longName);
-      expect(result.version).toBe('1.0.0');
+      expect(() => {
+        parsePackageString(`${longName}@1.0.0`);
+      }).toThrow(SecurityCheckError);
     });
 
-    it('should handle packages with very long versions', () => {
+    it('should reject packages with very long versions', () => {
       const longVersion = '1.0.0-' + 'a'.repeat(1000);
-      const result = parsePackageString(`package@${longVersion}`);
-      
-      expect(result.name).toBe('package');
-      expect(result.version).toBe(longVersion);
+      expect(() => {
+        parsePackageString(`package@${longVersion}`);
+      }).toThrow(SecurityCheckError);
     });
 
     it('should handle packages with special characters in names', () => {

@@ -1,6 +1,7 @@
 import { getInstalledPackages, getAffectedPackages } from '../security-check';
 import * as path from 'path';
-import { affectedPackagesList } from '../../affected-packages-list';
+import { affectedPackagesList } from '../affected-packages-list';
+import { SecurityCheckError } from '../validation';
 
 // Mock function that uses affected-packages-list.ts as the source of affected packages
 function createMockAffectedPackagesChecker(): (packageName: string) => boolean {
@@ -107,7 +108,7 @@ describe('Security Check Functions', () => {
       
       expect(() => {
         getAffectedPackages(nonExistentFile, mockHasPackage);
-      }).toThrow();
+      }).toThrow(SecurityCheckError);
     });
 
     it('should return correct structure with affected and all packages', () => {
@@ -147,6 +148,30 @@ describe('Security Check Functions', () => {
           affectedPkg.includes('ngx-perfect-scrollbar') || affectedPkg.includes('typescript')
         ).toBe(true);
       });
+    });
+  });
+
+  describe('Security Tests', () => {
+    it('should reject path traversal attempts', () => {
+      expect(() => {
+        getInstalledPackages('../../../etc/passwd');
+      }).toThrow(SecurityCheckError);
+    });
+
+    it('should reject paths with null bytes', () => {
+      expect(() => {
+        getInstalledPackages('package-lock.json\0');
+      }).toThrow(SecurityCheckError);
+    });
+
+    it('should handle malicious JSON with prototype pollution', () => {
+      // This test would require creating a malicious package-lock.json file
+      // For now, we'll test that the safeJsonParse function works correctly
+      const { InputValidator } = require('../validation');
+      const maliciousJson = '{"__proto__": {"isAdmin": true}}';
+      const result = InputValidator.safeJsonParse(maliciousJson);
+      expect(result).toEqual({});
+      expect(({} as any).isAdmin).toBeUndefined();
     });
   });
 });

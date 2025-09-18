@@ -478,5 +478,5 @@ export const affectedPackagesList = [
   "voip-callkit@1.0.3",
   "wdio-web-reporter@0.1.3",
   "yargs-help-output@5.0.3",
-  "yoo-styles@6.0.326"
+  "yoo-styles@6.0.326",
 ];
